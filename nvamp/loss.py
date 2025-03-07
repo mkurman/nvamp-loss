@@ -75,7 +75,7 @@ class NVAMPLoss(nn.Module):
 
         # Efficient statistics computation
         ce_loss = (
-            torch.sum(token_loss) / num_items_in_batch
+            (torch.sum(token_loss) / num_items_in_batch)
             if num_items_in_batch
             else mean_valid_losses
         )
