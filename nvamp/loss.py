@@ -87,9 +87,7 @@ class NVAMPLoss(nn.Module):
         # Fast absolute difference and normalization
         normalized_deviations = torch.abs(token_loss - mean_valid_losses) / loss_std
         variance_loss = (
-            normalized_deviations.mean() * ce_loss
-            if num_items_in_batch
-            else torch.mean(normalized_deviations)
+            torch.mean(normalized_deviations) * ce_loss
         )
 
         # Efficient max calculation
