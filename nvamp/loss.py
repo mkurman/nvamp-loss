@@ -70,22 +70,31 @@ class NVAMPLoss(nn.Module):
 
         num_items_in_batch = loss_kargs.get("num_items_in_batch", None)
 
+        # Compute valid loss mask
+        valid_mask = shift_labels != -100
+
+        # Select only indices that are not ignored
+        valid_losses = token_loss[valid_mask]
+
+        if num_items_in_batch is None:
+            num_items_in_batch = valid_losses.numel()
+
         # Vectorized variance-aware component
-        mean_valid_losses = torch.mean(token_loss)
+        mean_valid_losses = torch.mean(valid_losses)
 
         # Efficient statistics computation
         ce_loss = (
-            (torch.sum(token_loss) / num_items_in_batch)
+            torch.sum(token_loss) / num_items_in_batch
             if num_items_in_batch
             else mean_valid_losses
         )
 
         # Use fused operations where possible
         # Calculate variance in one step using torch.var
-        loss_std = torch.sqrt(torch.var(token_loss, unbiased=False) + self.eps)
+        loss_std = torch.sqrt(torch.var(valid_losses, unbiased=False) + self.eps)
 
         # Fast absolute difference and normalization
-        normalized_deviations = torch.abs(token_loss - mean_valid_losses) / loss_std
+        normalized_deviations = torch.abs(valid_losses - mean_valid_losses) / loss_std
         variance_loss = torch.mean(normalized_deviations).detach().item() * ce_loss
 
         # Efficient max calculation
